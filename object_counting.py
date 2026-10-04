@@ -2,10 +2,26 @@ import cv2
 from ultralytics import YOLO
 
 # Load YOLO model
-m = YOLO("yolo11n.pt")
+model = YOLO("yolo11n.pt")
 
-# Open Webcam
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+# Loop for camera indices and backends to find a working camera
+cap = None
+for i in range(5):
+   for backend in [cv2.CAP_DSHOW, cv2.CAP_MSMF]:
+        print("Trying camera:", i, "Backend:", backend)
+        test = cv2.VideoCapture(i, backend)
+        if test.isOpened():
+            ret, frame = test.read()
+            if ret:
+                cap = test
+                print("Camera working at index:", i)
+                print("Backend:", backend)
+                break
+        test.release()
+
+if cap is None:
+    print("No working camera found!")
+    exit()
 
 print("AI Object Tracking & Counting Started!")
 
@@ -21,7 +37,7 @@ while True:
         break
 
     # Detect and Track
-    results = m.track(
+    results = model.track(
         frame,
         persist=True,
         verbose=False
@@ -40,7 +56,7 @@ while True:
 
             # Class information
             cls = int(box.cls[0])
-            name = m.names[cls]
+            name = model.names[cls]
 
             # Count objects
             counts[name] = counts.get(name, 0) + 1
